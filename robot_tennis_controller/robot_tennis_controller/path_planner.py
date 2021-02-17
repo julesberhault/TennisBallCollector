@@ -195,52 +195,8 @@ if __name__ == '__main__':
    gc = GestionnaireCircuit()
 
    #on cree nos balles
-
-   balle1 = balle(3.002556, 45.846117, 'Clermont-Ferrand')
-   gc.ajouterballe(balle1)
-   balle2 = balle(-0.644905, 44.896839, 'Bordeaux')
-   gc.ajouterballe(balle2)
-   balle3 = balle(-1.380989, 43.470961, 'Bayonne')
-   gc.ajouterballe(balle3)
-   balle4 = balle(1.376579, 43.662010, 'Toulouse')
-   gc.ajouterballe(balle4)
-   balle5 = balle(5.337151, 43.327276, 'Marseille')
-   gc.ajouterballe(balle5)
-   balle6 = balle(7.265252, 43.745404, 'Nice')
-   gc.ajouterballe(balle6)
-   balle7 = balle(-1.650154, 47.385427, 'Nantes')
-   gc.ajouterballe(balle7)
-   balle8 = balle(-1.430427, 48.197310, 'Rennes')
-   gc.ajouterballe(balle8)
-   balle9 = balle(2.414787, 48.953260, 'Paris')
-   gc.ajouterballe(balle9)
-   balle10 = balle(3.090447, 50.612962, 'Lille')
-   gc.ajouterballe(balle10)
-   balle11 = balle(5.013054, 47.370547, 'Dijon')
-   gc.ajouterballe(balle11)
-   balle12 = balle(4.793327, 44.990153, 'Valence')
-   gc.ajouterballe(balle12)
-   balle13 = balle(2.447746, 44.966838, 'Aurillac')
-   gc.ajouterballe(balle13)
-   balle14 = balle(1.750115, 47.980822, 'Orleans')
-   gc.ajouterballe(balle14)
-   balle15 = balle(4.134148, 49.323421, 'Reims')
-   gc.ajouterballe(balle15)
-   balle16 = balle(7.506950, 48.580332, 'Strasbourg')
-   gc.ajouterballe(balle16)
-   balle17 = balle(1.233757, 45.865246, 'Limoges')
-   gc.ajouterballe(balle17)
-   balle18 = balle(4.047255,48.370925, 'Troyes')
-   gc.ajouterballe(balle18)
-   balle19 = balle(0.103163,49.532415, 'Le Havre')
-   gc.ajouterballe(balle19)
-   balle20 = balle(-1.495348, 49.667704, 'Cherbourg')
-   gc.ajouterballe(balle20)
-   balle21 = balle(-4.494615, 48.447500, 'Brest')
-   gc.ajouterballe(balle21)
-   balle22 = balle(-0.457140, 46.373545, 'Niort')
-   gc.ajouterballe(balle22)
-
+   for i in range(10):
+       gc.ajouterballe(balle(random.uniform(-13.5, 13.5), random.uniform(-6.5, 6.5), 'Balle n°'+str(i)))
 
    #on initialise la population avec 50 circuits
    pop = Population(gc, 50, True)
@@ -268,18 +224,14 @@ if __name__ == '__main__':
    lats.append(lats[0])
    noms.append(noms[0])
 
+   img = plt.imread('../models/ground_texture.png')
+   plt.figure()
+   plt.imshow(img, extent=[-14, 14, -7, 7])
 
-   map = Basemap(llcrnrlon=-14,llcrnrlat=-7,urcrnrlon=7,urcrnrlat=14.,
-             resolution='i', projection='tmerc', lat_0 = 0, lon_0 = 0)
-
-   map.drawmapboundary(fill_color='aqua')
-   map.fillcontinents(color='coral',lake_color='aqua')
-   map.drawcoastlines()
-   map.drawcountries()
-   x,y = map(lons,lats)
-   map.plot(x,y,'bo', markersize=12)
+   x, y = lons, lats
+   plt.plot(x,y,'ko', markersize=12)
    for nom,xpt,ypt in zip(noms,x,y):
-       plt.text(xpt+5000,ypt+25000,nom)
+       plt.text(xpt+0.5,ypt+0.5,nom)
 
-   map.plot(x, y, 'D-', markersize=10, linewidth=2, color='k', markerfacecolor='b') 
+   plt.plot(x, y, 'o-', markersize=10, linewidth=2, color='k', markerfacecolor='yellow') 
    plt.show()
