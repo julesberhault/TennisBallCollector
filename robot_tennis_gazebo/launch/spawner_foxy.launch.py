@@ -24,10 +24,15 @@ def generate_launch_description():
     robot_controller_node=Node(
         package="robot_tennis_controller", executable="controller")
 
+    navigation_node = Node(
+        package="robot_tennis_controller", executable="navigation"
+    )
+
     return LaunchDescription([
         robot_state_publisher_node,
         #rviz_node,
         spawn_entity,
         rqt_robot_steering_node,
-        robot_controller_node
+        robot_controller_node,
+        navigation_node
     ])

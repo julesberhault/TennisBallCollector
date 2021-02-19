@@ -21,6 +21,7 @@ setup(
     entry_points={
         'console_scripts': [
             'controller = robot_tennis_controller.controller:main',
+            'navigation = robot_tennis_controller.navigation:main',
         ],
     },
 )
