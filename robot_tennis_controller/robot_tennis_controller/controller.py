@@ -100,67 +100,73 @@ class Controller(Node):
 
     def timer_callback(self):
 
-        # Idle
-        if self.state == 0:
-            speed = 0.0
-            theta = 0.0
-        
-        # Net bypass
-        elif self.state == 1:
+        if self.move:
 
-            # Position error processing in different cases
-            if self.isNear:
-                e = (self.B - self.X)
-                if np.linalg.norm(e[:2]) > self.distance_near + 2*self.distance_threshold:
-                    self.isNear = False
-            else:
-                e = (self.A - self.X)
-                if np.linalg.norm(e) < self.distance_threshold:
-                    self.isNear = True
+            # Idle
+            if self.state == 0:
+                speed = 0.0
+                theta = 0.0
+            
+            # Net bypass
+            elif self.state == 1:
 
-            K_speed = 1.0
-            K_rotation = 1.5
-            speed = K_speed * 1.0
-            theta = K_rotation * sawtooth(np.arctan2(e[1, 0], e[0, 0]) - self.X[2, 0])
-                
-        
-        # Goto next ball
-        elif self.state == 2:
-
-            # Position error processing in different cases
-            if self.isNear:
-                e = (self.B - self.X)
-                if np.linalg.norm(e[:2]) > self.distance_near + 2*self.distance_threshold:
-                    self.isNear = False
-            else:
-                e = (self.A - self.X)
-                if np.linalg.norm(e) < self.distance_threshold:
-                    self.isNear = True        
-
-            # Computing speed and angle
-            if self.isNear:
-                if np.linalg.norm(e[:2]) < self.distance_threshold:
-                    K_speed = 0.0
-                    K_rotation = 0.5
+                # Position error processing in different cases
+                if self.isNear:
+                    e = (self.B - self.X)
+                    if np.linalg.norm(e[:2]) > self.distance_near + 2*self.distance_threshold:
+                        self.isNear = False
                 else:
-                    K_speed = 0.5
-                    K_rotation = 0.5
+                    e = (self.A - self.X)
+                    if np.linalg.norm(e) < self.distance_threshold:
+                        self.isNear = True
 
-                speed = K_speed * np.linalg.norm(e[:2])
-                theta = K_rotation * sawtooth(self.B[2, 0] - self.X[2, 0])
-            else :
-                K_speed = 0.4
+                K_speed = 1.0
                 K_rotation = 1.5
-                speed = K_speed * 3.0
+                speed = K_speed * 1.0
+                theta = K_rotation * sawtooth(np.arctan2(e[1, 0], e[0, 0]) - self.X[2, 0])
+                    
+            
+            # Goto next ball
+            elif self.state == 2:
+
+                # Position error processing in different cases
+                if self.isNear:
+                    e = (self.B - self.X)
+                    if np.linalg.norm(e[:2]) > self.distance_near + 2*self.distance_threshold:
+                        self.isNear = False
+                else:
+                    e = (self.A - self.X)
+                    if np.linalg.norm(e) < self.distance_threshold:
+                        self.isNear = True        
+
+                # Computing speed and angle
+                if self.isNear:
+                    if np.linalg.norm(e[:2]) < self.distance_threshold:
+                        K_speed = 0.0
+                        K_rotation = 0.5
+                    else:
+                        K_speed = 0.5
+                        K_rotation = 0.5
+
+                    speed = K_speed * np.linalg.norm(e[:2])
+                    theta = K_rotation * sawtooth(self.B[2, 0] - self.X[2, 0])
+                else :
+                    K_speed = 0.4
+                    K_rotation = 1.5
+                    speed = K_speed * 3.0
+                    theta = K_rotation * sawtooth(np.arctan2(e[1, 0], e[0, 0]) - self.X[2, 0])
+
+            # Goto area
+            elif self.state == 3:
+                e = (self.B - self.X)
+                K_speed = 2.0
+                K_rotation = 1.0
+                speed = K_speed * 1.0
                 theta = K_rotation * sawtooth(np.arctan2(e[1, 0], e[0, 0]) - self.X[2, 0])
 
-        # Goto area
-        elif self.state == 3:
-            e = (self.B - self.X)
-            K_speed = 2.0
-            K_rotation = 1.0
-            speed = K_speed * 1.0
-            theta = K_rotation * sawtooth(np.arctan2(e[1, 0], e[0, 0]) - self.X[2, 0])
+        else:
+            speed = 0.0
+            theta = 0.0
 
         # Building message
         msg = Twist()
