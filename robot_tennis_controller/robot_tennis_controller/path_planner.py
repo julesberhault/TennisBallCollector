@@ -195,17 +195,17 @@ if __name__ == '__main__':
    gc = GestionnaireCircuit()
 
    #on cree nos sommets
-   gc.ajoutersommet(sommet(random.uniform(-13, 13), random.uniform(-6, 6), 'Robot'))
+   gc.ajoutersommet(sommet(random.uniform(2, 13)*random.choice((-1, 1)), random.uniform(-6, 6), 'Robot'))
    for i in range(6):
-       gc.ajoutersommet(sommet(random.uniform(-13, 13), random.uniform(-6, 6), 'Balle n°'+str(i)))
-   gc.ajoutersommet(sommet(0, 6, 'CP n°1'))
-   gc.ajoutersommet(sommet(0, -6, 'CP n°2'))
-   gc.ajoutersommet(sommet(-13, 6, 'CA n°1'))
-   gc.ajoutersommet(sommet(13, -6, 'CA n°2'))
+       gc.ajoutersommet(sommet(random.uniform(2, 13)*random.choice((-1, 1)), random.uniform(-6, 6), 'Balle n°'+str(i+1)))
+   gc.ajoutersommet(sommet(0, 6.5, 'Crossing Point n°1'))
+   gc.ajoutersommet(sommet(0, -6.5, 'Crossing Point n°2'))
+   gc.ajoutersommet(sommet(-13, 6.5, 'Area n°1'))
+   gc.ajoutersommet(sommet(13, -6.5, 'Area n°2'))
 
    #on initialise la population avec 50 circuits
    pop = Population(gc, 50, True)
-   print("Distance initiale : " + str(pop.getFittest().getDistance()))
+   print("Distance initiale : " + str(pop.getFittest().getDistance()/150))
    
    # On fait evoluer notre population sur 100 generations
    ga = GA(gc)
@@ -213,7 +213,7 @@ if __name__ == '__main__':
    for i in range(0, 100):
       pop = ga.evoluerPopulation(pop)
    
-   print("Distance finale : " + str(pop.getFittest().getDistance()))
+   print("Distance finale : " + str(pop.getFittest().getDistance()/150))
    meilleurePopulation = pop.getFittest()
 
    #on genere une carte représentant notre solution
@@ -231,7 +231,7 @@ if __name__ == '__main__':
 
    img = plt.imread('../models/ground_texture.png')
    plt.figure()
-   plt.imshow(img, extent=[-14, 14, -7, 7])
+   plt.imshow(img, extent=[-15, 15, -8, 8])
 
    x, y = lons, lats
    plt.plot(x,y,'ko', markersize=12)
@@ -239,10 +239,10 @@ if __name__ == '__main__':
    for nom,xpt,ypt in zip(noms,x,y):
        plt.text(xpt+0.5,ypt+0.5,nom)
        if nom == 'Robot':
-           plt.plot(xpt, ypt, 'D-', markersize=12, linewidth=2, color='k', markerfacecolor='r')
-       if nom[:2] == 'CA':
+          plt.plot(xpt, ypt, 'D', markersize=12, linewidth=2, color='k', markerfacecolor='r')
+       if nom[:1] == 'A':
           plt.plot(xpt, ypt, 'o', markersize=12, linewidth=2, color='k', markerfacecolor='g')
-       if nom[:2] == 'CP':
+       if nom[:1] == 'C':
           plt.plot(xpt, ypt, 'o', markersize=12, linewidth=2, color='k', markerfacecolor='b')
            
    plt.show()

@@ -2,7 +2,9 @@ import numpy as np
 import math
 
 import rclpy
+
 from geometry_msgs.msg import Pose
+from geometry_msgs.msg import PoseArray
 from std_msgs.msg import Bool
 from std_msgs.msg import Int16
 from rclpy.node import Node
@@ -17,6 +19,7 @@ class TennisCollectorNavigationSimple(Node):
         
         self.is_ball_collected = False
         self.is_ball_on_court = False
+        self.balls_pose = []
         self.pose_ball_x = 0.0
         self.pose_ball_y = 0.0
         self.pose_rob_x = 0.0
@@ -45,14 +48,14 @@ class TennisCollectorNavigationSimple(Node):
         # PUBLISHER SUBSCIPTER INITIALIZATION
         #-------------------------------------------------------------------
         self.ball_sub = self.create_subscription(
-            Pose,
-            'ball',
+            PoseArray,
+            'balls_pose',
             self.ball_callback,
             qos)
         
         self.rob_sub = self.create_subscription(
             Pose,
-            'robot',
+            'robot_pose',
             self.rob_callback,
             qos)
 
@@ -72,13 +75,14 @@ class TennisCollectorNavigationSimple(Node):
 
     def ball_callback(self, msg):
         
-        self.pose_ball_x = msg.pose.pose.position.x
-        self.pose_ball_y = msg.pose.pose.position.y
+        self.balls_pose = msg.poses
+        self.pose_ball_x = self.balls_pose[0].position.x
+        self.pose_ball_y = self.balls_pose[0].position.y
 
     def rob_callback(self, msg):
 
-        self.pose_rob_x = msg.pose.pose.position.x
-        self.pose_rob_y = msg.pose.pose.position.y
+        self.pose_rob_x = msg.pose.position.x
+        self.pose_rob_y = msg.pose.position.y
 
     def ibc_callback(self, msg):
 
@@ -112,7 +116,7 @@ class TennisCollectorNavigationSimple(Node):
         #-------------------------------------------------------------------
         if self.state == 2:
 
-            if self.is_ball_collected == True:
+            if self.is_ball_collected == False:
                 if np.sign(self.pose_rob.y) != np.sign(self.pose_ball_y):
                     state = 1
                 else:
@@ -128,8 +132,8 @@ class TennisCollectorNavigationSimple(Node):
         if self.state == 3:
 
             if self.is_ball_collected == True:
-                self.x_wp = 6.0*np.sign(self.pose_rob.y)
-                self.y_wp = 13.0*np.sign(self.pose_rob.y)
+                self.x_wp = 6.0*np.sign(self.pose_rob.y)*np.sign(abs(5-self.pose_rob.x))
+                self.y_wp = 13.0*np.sign(self.pose_rob.y)*np.sign(abs(5-self.pose_rob.x))
             else:
                 self.state = 2
         #-------------------------------------------------------------------
@@ -168,14 +172,14 @@ class TennisCollectorNavigationSimple(Node):
             pose.orientation.z = q[2]
             pose.orientation.w = q[3]
         if state == 3:
-            yaw = np.pi/4 + np.sign(self.pose_ball.y) * np.pi/2
+            yaw = -np.pi/4 + np.sign(self.pose_ball.y) * np.pi/2
             q = self.quaternion_from_euler(0, 0, yaw)
             pose.orientation.x = q[0]
             pose.orientation.y = q[1]
             pose.orientation.z = q[2]
             pose.orientation.w = q[3]
         else:
-            yaw = 0
+            yaw = np.sign(self.pose_rob.y) * np.pi/2
             q = self.quaternion_from_euler(0, 0, yaw)
             pose.orientation.x = q[0]
             pose.orientation.y = q[1]
@@ -190,28 +194,28 @@ class TennisCollectorNavigationSimple(Node):
         int.data = self.state
         self.state_pub.publish(int)
         #-------------------------------------------------------------------
-    
-    
-    def quaternion_from_euler(self, roll, pitch, yaw):
-        """
-        Converts euler roll, pitch, yaw to quaternion (w in last place)
-        quat = [x, y, z, w]
-        Bellow should be replaced when porting for ROS 2 Python tf_conversions is done.
-        """
-        cy = math.cos(yaw * 0.5)
-        sy = math.sin(yaw * 0.5)
-        cp = math.cos(pitch * 0.5)
-        sp = math.sin(pitch * 0.5)
-        cr = math.cos(roll * 0.5)
-        sr = math.sin(roll * 0.5)
 
-        q = [0] * 4
-        q[0] = cy * cp * cr + sy * sp * sr
-        q[1] = cy * cp * sr - sy * sp * cr
-        q[2] = sy * cp * sr + cy * sp * cr
-        q[3] = sy * cp * cr - cy * sp * sr
+    
+def quaternion_from_euler(self, roll, pitch, yaw):
+    """
+    Converts euler roll, pitch, yaw to quaternion (w in last place)
+    quat = [x, y, z, w]
+    Bellow should be replaced when porting for ROS 2 Python tf_conversions is done.
+    """
+    cy = math.cos(yaw * 0.5)
+    sy = math.sin(yaw * 0.5)
+    cp = math.cos(pitch * 0.5)
+    sp = math.sin(pitch * 0.5)
+    cr = math.cos(roll * 0.5)
+    sr = math.sin(roll * 0.5)
 
-        return q
+    q = [0] * 4
+    q[0] = cy * cp * cr + sy * sp * sr
+    q[1] = cy * cp * sr - sy * sp * cr
+    q[2] = sy * cp * sr + cy * sp * cr
+    q[3] = sy * cp * cr - cy * sp * sr
+
+    return q
 
 
 def main(args=None):
