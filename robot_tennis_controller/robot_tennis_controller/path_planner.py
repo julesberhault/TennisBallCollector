@@ -5,30 +5,30 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
-class balle:
+class sommet:
    def __init__(self, lon, lat, nom):
       self.lon = lon
       self.lat = lat
       self.nom = nom
    
 
-   def distance(self, balle):
-      distanceX = (balle.lon-self.lon)*40000*math.cos((self.lat+balle.lat)*math.pi/360)/360
-      distanceY = (self.lat-balle.lat)*40000/360
+   def distance(self, sommet):
+      distanceX = (sommet.lon-self.lon)*40000*math.cos((self.lat+sommet.lat)*math.pi/360)/360
+      distanceY = (self.lat-sommet.lat)*40000/360
       distance = math.sqrt( (distanceX*distanceX) + (distanceY*distanceY) )
       return distance
 
 class GestionnaireCircuit:
-   ballesDestinations = []
+   sommetsDestinations = []
    
-   def ajouterballe(self, balle):
-      self.ballesDestinations.append(balle)
+   def ajoutersommet(self, sommet):
+      self.sommetsDestinations.append(sommet)
    
-   def getballe(self, index):
-      return self.ballesDestinations[index]
+   def getsommet(self, index):
+      return self.sommetsDestinations[index]
    
-   def nombreballes(self):
-      return len(self.ballesDestinations)
+   def nombresommets(self):
+      return len(self.sommetsDestinations)
 
 class Circuit:
    def __init__(self, gestionnaireCircuit, circuit=None):
@@ -39,7 +39,7 @@ class Circuit:
       if circuit is not None:
          self.circuit = circuit
       else:
-         for i in range(0, self.gestionnaireCircuit.nombreballes()):
+         for i in range(0, self.gestionnaireCircuit.nombresommets()):
             self.circuit.append(None)
 
    def __len__(self):
@@ -52,15 +52,15 @@ class Circuit:
      self.circuit[key] = value
 
    def genererIndividu(self):
-     for indiceballe in range(0, self.gestionnaireCircuit.nombreballes()):
-        self.setballe(indiceballe, self.gestionnaireCircuit.getballe(indiceballe))
+     for indicesommet in range(0, self.gestionnaireCircuit.nombresommets()):
+        self.setsommet(indicesommet, self.gestionnaireCircuit.getsommet(indicesommet))
      random.shuffle(self.circuit)
 
-   def getballe(self, circuitPosition):
+   def getsommet(self, circuitPosition):
      return self.circuit[circuitPosition]
 
-   def setballe(self, circuitPosition, balle):
-     self.circuit[circuitPosition] = balle
+   def setsommet(self, circuitPosition, sommet):
+     self.circuit[circuitPosition] = sommet
      self.fitness = 0.0
      self.distance = 0
 
@@ -72,22 +72,22 @@ class Circuit:
    def getDistance(self):
      if self.distance == 0:
         circuitDistance = 0
-        for indiceballe in range(0, self.tailleCircuit()):
-           balleOrigine = self.getballe(indiceballe)
-           balleArrivee = None
-           if indiceballe+1 < self.tailleCircuit():
-              balleArrivee = self.getballe(indiceballe+1)
+        for indicesommet in range(0, self.tailleCircuit()):
+           sommetOrigine = self.getsommet(indicesommet)
+           sommetArrivee = None
+           if indicesommet+1 < self.tailleCircuit():
+              sommetArrivee = self.getsommet(indicesommet+1)
            else:
-              balleArrivee = self.getballe(0)
-           circuitDistance += balleOrigine.distance(balleArrivee)
+              sommetArrivee = self.getsommet(0)
+           circuitDistance += sommetOrigine.distance(sommetArrivee)
         self.distance = circuitDistance
      return self.distance
 
    def tailleCircuit(self):
      return len(self.circuit)
 
-   def contientballe(self, balle):
-     return balle in self.circuit
+   def contientsommet(self, sommet):
+     return sommet in self.circuit
 
 class Population:
    def __init__(self, gestionnaireCircuit, taillePopulation, init):
@@ -157,16 +157,16 @@ class GA:
       
       for i in range(0, enfant.tailleCircuit()):
          if startPos < endPos and i > startPos and i < endPos:
-            enfant.setballe(i, parent1.getballe(i))
+            enfant.setsommet(i, parent1.getsommet(i))
          elif startPos > endPos:
             if not (i < startPos and i > endPos):
-               enfant.setballe(i, parent1.getballe(i))
+               enfant.setsommet(i, parent1.getsommet(i))
       
       for i in range(0, parent2.tailleCircuit()):
-         if not enfant.contientballe(parent2.getballe(i)):
+         if not enfant.contientsommet(parent2.getsommet(i)):
             for ii in range(0, enfant.tailleCircuit()):
-               if enfant.getballe(ii) == None:
-                  enfant.setballe(ii, parent2.getballe(i))
+               if enfant.getsommet(ii) == None:
+                  enfant.setsommet(ii, parent2.getsommet(i))
                   break
       
       return enfant
@@ -176,11 +176,11 @@ class GA:
         if random.random() < self.tauxMutation:
            circuitPos2 = int(circuit.tailleCircuit() * random.random())
            
-           balle1 = circuit.getballe(circuitPos1)
-           balle2 = circuit.getballe(circuitPos2)
+           sommet1 = circuit.getsommet(circuitPos1)
+           sommet2 = circuit.getsommet(circuitPos2)
            
-           circuit.setballe(circuitPos2, balle1)
-           circuit.setballe(circuitPos1, balle2)
+           circuit.setsommet(circuitPos2, sommet1)
+           circuit.setsommet(circuitPos1, sommet2)
 
    def selectionTournoi(self, pop):
      tournoi = Population(self.gestionnaireCircuit, self.tailleTournoi, False)
@@ -194,53 +194,14 @@ if __name__ == '__main__':
    
    gc = GestionnaireCircuit()
 
-   #on cree nos balles
-
-   balle1 = balle(3.002556, 45.846117, 'Clermont-Ferrand')
-   gc.ajouterballe(balle1)
-   balle2 = balle(-0.644905, 44.896839, 'Bordeaux')
-   gc.ajouterballe(balle2)
-   balle3 = balle(-1.380989, 43.470961, 'Bayonne')
-   gc.ajouterballe(balle3)
-   balle4 = balle(1.376579, 43.662010, 'Toulouse')
-   gc.ajouterballe(balle4)
-   balle5 = balle(5.337151, 43.327276, 'Marseille')
-   gc.ajouterballe(balle5)
-   balle6 = balle(7.265252, 43.745404, 'Nice')
-   gc.ajouterballe(balle6)
-   balle7 = balle(-1.650154, 47.385427, 'Nantes')
-   gc.ajouterballe(balle7)
-   balle8 = balle(-1.430427, 48.197310, 'Rennes')
-   gc.ajouterballe(balle8)
-   balle9 = balle(2.414787, 48.953260, 'Paris')
-   gc.ajouterballe(balle9)
-   balle10 = balle(3.090447, 50.612962, 'Lille')
-   gc.ajouterballe(balle10)
-   balle11 = balle(5.013054, 47.370547, 'Dijon')
-   gc.ajouterballe(balle11)
-   balle12 = balle(4.793327, 44.990153, 'Valence')
-   gc.ajouterballe(balle12)
-   balle13 = balle(2.447746, 44.966838, 'Aurillac')
-   gc.ajouterballe(balle13)
-   balle14 = balle(1.750115, 47.980822, 'Orleans')
-   gc.ajouterballe(balle14)
-   balle15 = balle(4.134148, 49.323421, 'Reims')
-   gc.ajouterballe(balle15)
-   balle16 = balle(7.506950, 48.580332, 'Strasbourg')
-   gc.ajouterballe(balle16)
-   balle17 = balle(1.233757, 45.865246, 'Limoges')
-   gc.ajouterballe(balle17)
-   balle18 = balle(4.047255,48.370925, 'Troyes')
-   gc.ajouterballe(balle18)
-   balle19 = balle(0.103163,49.532415, 'Le Havre')
-   gc.ajouterballe(balle19)
-   balle20 = balle(-1.495348, 49.667704, 'Cherbourg')
-   gc.ajouterballe(balle20)
-   balle21 = balle(-4.494615, 48.447500, 'Brest')
-   gc.ajouterballe(balle21)
-   balle22 = balle(-0.457140, 46.373545, 'Niort')
-   gc.ajouterballe(balle22)
-
+   #on cree nos sommets
+   gc.ajoutersommet(sommet(random.uniform(-13, 13), random.uniform(-6, 6), 'Robot'))
+   for i in range(6):
+       gc.ajoutersommet(sommet(random.uniform(-13, 13), random.uniform(-6, 6), 'Balle n°'+str(i)))
+   gc.ajoutersommet(sommet(0, 6, 'CP n°1'))
+   gc.ajoutersommet(sommet(0, -6, 'CP n°2'))
+   gc.ajoutersommet(sommet(-13, 6, 'CA n°1'))
+   gc.ajoutersommet(sommet(13, -6, 'CA n°2'))
 
    #on initialise la population avec 50 circuits
    pop = Population(gc, 50, True)
@@ -259,27 +220,29 @@ if __name__ == '__main__':
    lons = []
    lats = []
    noms = []
-   for balle in meilleurePopulation.circuit:
-      lons.append(balle.lon)
-      lats.append(balle.lat)
-      noms.append(balle.nom)
+   for sommet in meilleurePopulation.circuit:
+      lons.append(sommet.lon)
+      lats.append(sommet.lat)
+      noms.append(sommet.nom)
 
    lons.append(lons[0])
    lats.append(lats[0])
    noms.append(noms[0])
 
+   img = plt.imread('../models/ground_texture.png')
+   plt.figure()
+   plt.imshow(img, extent=[-14, 14, -7, 7])
 
-   map = Basemap(llcrnrlon=-14,llcrnrlat=-7,urcrnrlon=7,urcrnrlat=14.,
-             resolution='i', projection='tmerc', lat_0 = 0, lon_0 = 0)
-
-   map.drawmapboundary(fill_color='aqua')
-   map.fillcontinents(color='coral',lake_color='aqua')
-   map.drawcoastlines()
-   map.drawcountries()
-   x,y = map(lons,lats)
-   map.plot(x,y,'bo', markersize=12)
+   x, y = lons, lats
+   plt.plot(x,y,'ko', markersize=12)
+   plt.plot(x, y, 'o-', markersize=10, linewidth=2, color='k', markerfacecolor='yellow')
    for nom,xpt,ypt in zip(noms,x,y):
-       plt.text(xpt+5000,ypt+25000,nom)
-
-   map.plot(x, y, 'D-', markersize=10, linewidth=2, color='k', markerfacecolor='b') 
+       plt.text(xpt+0.5,ypt+0.5,nom)
+       if nom == 'Robot':
+           plt.plot(xpt, ypt, 'D-', markersize=12, linewidth=2, color='k', markerfacecolor='r')
+       if nom[:2] == 'CA':
+          plt.plot(xpt, ypt, 'o', markersize=12, linewidth=2, color='k', markerfacecolor='g')
+       if nom[:2] == 'CP':
+          plt.plot(xpt, ypt, 'o', markersize=12, linewidth=2, color='k', markerfacecolor='b')
+           
    plt.show()

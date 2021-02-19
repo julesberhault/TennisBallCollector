@@ -1,19 +1,19 @@
 import numpy as np
-import math
 
 import rclpy
 from geometry_msgs.msg import Pose
 from std_msgs.msg import Bool
-from std_msgs.msg import Int16
+from geometry_msgs.msg import PoseArray
 from rclpy.node import Node
 from rclpy.qos import QoSProfile
+from graph import Graph
 
 
-class TennisCollectorNavigationSimple(Node):
+class TennisCollectorNavigationMulti(Node):
 
     def __init__(self):
         
-        super().__init__('navigation')
+        super().__init__('navigation_multi')
         
         self.is_ball_collected = False
         self.is_ball_on_court = False
@@ -21,24 +21,23 @@ class TennisCollectorNavigationSimple(Node):
         self.pose_ball_y = 0.0
         self.pose_rob_x = 0.0
         self.pose_rob_y = 0.0
+        self.list = []
 
         self.state = 0
-        self.x_wp = 0.0
+        self.y_wp = 0.0
         self.y_wp = 0.0
         self.move = False
 
         qos = QoSProfile(depth=10)
 
         timer_period = 0.05
-        self.timer = self.create_timer(timer_period, self.navigation)
+        self.timer = self.create_timer(timer_period, self.navigation_multi)
 
         # PUBLISHER INITIALIZATION
         #-------------------------------------------------------------------
-        self.wp_pub = self.create_publisher(Pose, 'waypoint', qos)
+        self.wp_pub = self.create_publisher(Pose, 'balls_pose', qos)
 
         self.move_pub = self.create_publisher(Bool, 'move', qos)
-
-        self.state_pub = self.create_publisher(Int16, 'state', qos)
         #-------------------------------------------------------------------
 
 
@@ -89,7 +88,7 @@ class TennisCollectorNavigationSimple(Node):
         self.is_ball_on_court = msg.bool.data
 
 
-    def navigation(self):
+    def navigation_multi(self):
         pose = Pose()
         bool = Bool()
 
@@ -99,7 +98,7 @@ class TennisCollectorNavigationSimple(Node):
 
             if self.is_ball_on_court == True:
                 if np.sign(self.pose_rob.y) != np.sign(self.pose_ball_y):
-                    self.x_wp = 6*np.sign(self.poserob.x)
+                    self.x_wp = 6.5*np.sign(self.poserob.x)
                     self.y_wp = 0.0
                 else:
                     self.state = 2
@@ -112,7 +111,7 @@ class TennisCollectorNavigationSimple(Node):
         #-------------------------------------------------------------------
         if self.state == 2:
 
-            if self.is_ball_collected == True:
+            if self.is_ball_on_court == True:
                 if np.sign(self.pose_rob.y) != np.sign(self.pose_ball_y):
                     state = 1
                 else:
@@ -128,8 +127,8 @@ class TennisCollectorNavigationSimple(Node):
         if self.state == 3:
 
             if self.is_ball_collected == True:
-                self.x_wp = 6.0*np.sign(self.pose_rob.y)
-                self.y_wp = 13.0*np.sign(self.pose_rob.y)
+                self.x_wp = 7.0*np.sign(self.pose_rob.y)
+                self.y_wp = 14.0*np.sign(self.pose_rob.y)
             else:
                 self.state = 2
         #-------------------------------------------------------------------
@@ -154,76 +153,55 @@ class TennisCollectorNavigationSimple(Node):
 
         # PUBLISHING WAYPONT (POSE) AND MOVING COMMAND (BOOL)
         #-------------------------------------------------------------------
-
-        pose.position.x = self.x_wp
-        pose.position.y = self.y_wp
-
-        if state == 2:
-            base = [6, 13]*np.sign(self.pose_ball.y)
-            vec = (base[0] - self.pose_ball[0], base[1] - self.pose_ball[1])
-            yaw = np.arctan2(vec[1], vec[0])
-            q = self.quaternion_from_euler(0, 0, yaw)
-            pose.orientation.x = q[0]
-            pose.orientation.y = q[1]
-            pose.orientation.z = q[2]
-            pose.orientation.w = q[3]
-        if state == 3:
-            yaw = np.pi/4 + np.sign(self.pose_ball.y) * np.pi/2
-            q = self.quaternion_from_euler(0, 0, yaw)
-            pose.orientation.x = q[0]
-            pose.orientation.y = q[1]
-            pose.orientation.z = q[2]
-            pose.orientation.w = q[3]
-        else:
-            yaw = 0
-            q = self.quaternion_from_euler(0, 0, yaw)
-            pose.orientation.x = q[0]
-            pose.orientation.y = q[1]
-            pose.orientation.z = q[2]
-            pose.orientation.w = q[3]
-
+        pose.pose.position.x = self.x_wp
+        pose.pose.position.y = self.y_wp
         self.wp_pub.publish(pose)
-        self.get_logger().info("Publishing: {}, {}, {}".format(pose.x, pose.y, yaw))
+        self.get_logger().info("Publishing: {}, {}, {}".format(pose.x, pose.y))
 
         bool.data = self.move
         self.move_pub.publish(bool)
-        int.data = self.state
-        self.state_pub.publish(int)
         #-------------------------------------------------------------------
-    
-    
-    def quaternion_from_euler(self, roll, pitch, yaw):
+
+    def dijkstra(self):
+        
+        n = len(self.list)
+
+        self.list.append(self.ball_sub)
+        g = Graph(n)
+
+        g.graph = []
+        for j in range (n):
+            line = []
+            for i in range(n):
+                dist = np.sqrt((self.list[i].pose.x-self.list[j].pose.x)**2+(self.list[i].pose.y-self.list[j].pose.y)**2)
+                line.append(dist)
+            g.graph.append(line)
+
         """
-        Converts euler roll, pitch, yaw to quaternion (w in last place)
-        quat = [x, y, z, w]
-        Bellow should be replaced when porting for ROS 2 Python tf_conversions is done.
+        g.graph = [[0, 4, 0, 0, 0, 0, 0, 8, 0],
+                [4, 0, 8, 0, 0, 0, 0, 11, 0],
+                [0, 8, 0, 7, 0, 4, 0, 0, 2],
+                [0, 0, 7, 0, 9, 14, 0, 0, 0],
+                [0, 0, 0, 9, 0, 10, 0, 0, 0],
+                [0, 0, 4, 14, 10, 0, 2, 0, 0],
+                [0, 0, 0, 0, 0, 2, 0, 1, 6],
+                [8, 11, 0, 0, 0, 0, 1, 0, 7],
+                [0, 0, 2, 0, 0, 0, 6, 7, 0]]
         """
-        cy = math.cos(yaw * 0.5)
-        sy = math.sin(yaw * 0.5)
-        cp = math.cos(pitch * 0.5)
-        sp = math.sin(pitch * 0.5)
-        cr = math.cos(roll * 0.5)
-        sr = math.sin(roll * 0.5)
 
-        q = [0] * 4
-        q[0] = cy * cp * cr + sy * sp * sr
-        q[1] = cy * cp * sr - sy * sp * cr
-        q[2] = sy * cp * sr + cy * sp * cr
-        q[3] = sy * cp * cr - cy * sp * sr
+        distances g.dijkstra(0)
 
-        return q
+    def main(args=None):
+        rclpy.init(args=args)
+        navigation = TennisCollectorNavigationMulti()
+        rclpy.spin(navigation)
 
+        # Destroy the node explicitly
+        # (optional - otherwise it will be done automatically
+        # when the garbage collector destroys the node object)
+        minimal_publisher.destroy_node()
+        rclpy.shutdown()
 
-def main(args=None):
-    rclpy.init(args=args)
-    navigation_node = TennisCollectorNavigationSimple()
-    rclpy.spin(navigation_node)
-
-    # Destroy the node explicitly
-    # (optional - otherwise it will be done automatically
-    # when the garbage collector destroys the node object)
-    navigation_node.publisher.destroy_node()
-    rclpy.shutdown()
 
 if __name__ == '__main__':
     main()
