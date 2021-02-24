@@ -1,8 +1,8 @@
 import random
 import math
-from mpl_toolkits.basemap import Basemap
 import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib.animation import FuncAnimation, PillowWriter
 
 
 class sommet:
@@ -190,6 +190,39 @@ class GA:
      fittest = tournoi.getFittest()
      return fittest
 
+def afficherCarte(meilleurePopulation):
+   #on genere une carte représentant notre solution
+   lons = []
+   lats = []
+   noms = []
+   for sommet in meilleurePopulation:
+      lons.append(sommet.lon)
+      lats.append(sommet.lat)
+      noms.append(sommet.nom)
+
+   #lons.append(lons[0])
+   #lats.append(lats[0])
+   #noms.append(noms[0])
+
+   img = plt.imread('../models/ground_texture.png')
+   plt.figure('Chemin planifié')
+   plt.imshow(img, extent=[-15, 15, -8, 8])
+
+   x, y = lons, lats
+   plt.plot(x,y,'k--', linewidth=2)
+   for nom,xpt,ypt in zip(noms,x,y):
+       plt.text(xpt+0.5,ypt+0.5,nom)
+       if nom[:1] == 'B':
+         plt.plot(xpt, ypt, 'o', markeredgewidth=2, markersize=12, color='k', markerfacecolor='yellow')
+       if nom[:1] == 'R':
+         plt.plot(xpt, ypt, 'D', markeredgewidth=2, markersize=12, color='k', markerfacecolor='r')
+       if nom[:1] == 'A':
+         plt.plot(xpt, ypt, 's', markeredgewidth=2, markersize=12, color='k', markerfacecolor='orange')
+       if nom[:1] == 'C':
+         plt.plot(xpt, ypt, 'v', markeredgewidth=2, markersize=12, color='k', markerfacecolor='g')
+   return x,y, noms
+
+
 if __name__ == '__main__':
    
    gc = GestionnaireCircuit()
@@ -214,35 +247,65 @@ if __name__ == '__main__':
       pop = ga.evoluerPopulation(pop)
    
    print("Distance finale : " + str(pop.getFittest().getDistance()/150))
+   
    meilleurePopulation = pop.getFittest()
 
-   #on genere une carte représentant notre solution
-   lons = []
-   lats = []
-   noms = []
-   for sommet in meilleurePopulation.circuit:
-      lons.append(sommet.lon)
-      lats.append(sommet.lat)
-      noms.append(sommet.nom)
+   gc.sommetsDestinations = meilleurePopulation.circuit
 
-   lons.append(lons[0])
-   lats.append(lats[0])
-   noms.append(noms[0])
+   for i in range(len(gc.sommetsDestinations)):
+         if gc.sommetsDestinations[i].nom == "Robot":
+            gc.sommetsDestinations = np.roll(np.asarray(gc.sommetsDestinations),-i).tolist()
 
-   img = plt.imread('../models/ground_texture.png')
-   plt.figure()
-   plt.imshow(img, extent=[-15, 15, -8, 8])
-
-   x, y = lons, lats
-   plt.plot(x,y,'ko', markersize=12)
-   plt.plot(x, y, 'o-', markersize=10, linewidth=2, color='k', markerfacecolor='yellow')
-   for nom,xpt,ypt in zip(noms,x,y):
-       plt.text(xpt+0.5,ypt+0.5,nom)
-       if nom == 'Robot':
-          plt.plot(xpt, ypt, 'D', markersize=12, linewidth=2, color='k', markerfacecolor='r')
-       if nom[:1] == 'A':
-          plt.plot(xpt, ypt, 'o', markersize=12, linewidth=2, color='k', markerfacecolor='g')
-       if nom[:1] == 'C':
-          plt.plot(xpt, ypt, 'o', markersize=12, linewidth=2, color='k', markerfacecolor='b')
-           
+   afficherCarte(gc.sommetsDestinations)
    plt.show()
+
+   def compute():
+      x, y, noms = afficherCarte(gc.sommetsDestinations)
+      if len(gc.sommetsDestinations) > 1:
+         gc.sommetsDestinations[1].nom = "Robot"
+         gc.sommetsDestinations.pop(0)
+      return x,y, noms
+
+   # On affiche l'animation
+   fig, ax = plt.subplots(figsize=(14, 7))
+   fig.suptitle('Chemin parcouru')
+   lnt, = plt.plot([],[],'k--', linewidth=2)
+   lnb, = plt.plot([], [], 'o', markeredgewidth=2, markersize=12, color='k', markerfacecolor='yellow')
+   lnr, = plt.plot([], [], 'D', markeredgewidth=2, markersize=12, color='k', markerfacecolor='r')
+   lnc, = plt.plot([], [], 'v', markeredgewidth=2, markersize=12, color='k', markerfacecolor='g')
+   lna, = plt.plot([], [], 's', markeredgewidth=2, markersize=12, color='k', markerfacecolor='orange')
+
+   def init():
+      img = plt.imread('../models/ground_texture.png')
+      ax.imshow(img, extent=[-15, 15, -8, 8])
+      ax.legend(['Trajet','Balle','Robot','Passage filet','Zone de dépôt'])
+      return lnt, lnb, lnr, lnc, lna,
+
+   def update(frame):
+      x,y,noms = compute()
+      xb=[obj[0] for obj in zip(x, noms) if obj[1][:1] == "B"]
+      yb=[obj[0] for obj in zip(y, noms) if obj[1][:1] == "B"]
+      xr=[obj[0] for obj in zip(x, noms) if obj[1][:1] == "R"]
+      yr=[obj[0] for obj in zip(y, noms) if obj[1][:1] == "R"]
+      xc=[obj[0] for obj in zip(x, noms) if obj[1][:1] == "C"]
+      yc=[obj[0] for obj in zip(y, noms) if obj[1][:1] == "C"]
+      xa=[obj[0] for obj in zip(x, noms) if obj[1][:1] == "A"]
+      ya=[obj[0] for obj in zip(y, noms) if obj[1][:1] == "A"]
+      lnt.set_data(x, y)
+      lnb.set_data(xb, yb)
+      lnr.set_data(xr, yr)
+      lnc.set_data(xc, yc)
+      lna.set_data(xa, ya)
+      return lnt, lnb, lnr, lnc, lna,
+   
+   ani = FuncAnimation(fig, update, frames=15, interval=1000,
+                  init_func=init, blit=True, repeat=False)
+   plt.show()
+   
+   # On créer une image animée .gif dans /docs/gifs/
+   
+   
+   f = r"../../docs/gifs/path_finderHD.gif" 
+   writergif = PillowWriter(fps=1) 
+   ani.save(f, writer=writergif)
+   
